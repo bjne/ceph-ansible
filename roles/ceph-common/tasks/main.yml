@@ -18,6 +18,14 @@
   register: socket
   changed_when: False
 
+- name: make sure fetch directory exists
+  file:
+    state=directory
+    path=fetch
+    mode=0755
+  connection: local
+  sudo: false
+
 - name: generate cluster UUID
   shell: >
     uuidgen | tee fetch/ceph_cluster_uuid.conf
