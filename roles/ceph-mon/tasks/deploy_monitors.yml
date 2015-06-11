@@ -1,4 +1,34 @@
----
+- name: make sure fetch directory exists
+  file:
+    state=directory
+    path=fetch
+    mode=0755
+  connection: local
+  when: monitor secret is not defined
+
+- name: generate monitor secret
+  shell: >
+    dd if=/dev/urandom bs=30 count=1 | base64 | tee fetch/ceph_mon.secret
+    creates=fetch/ceph_mon.secret
+  connection: local
+  sudo: false
+  register: mon_secret
+  when: monitor_secret is not defined
+
+- name: read monitor secret if it exists
+  command: >
+    cat fetch/ceph_mon.secret
+    removes=fetch/ceph_mon.secret
+  connection: local
+  sudo: false
+  register: mon_secret
+  changed_when: False
+  when: monitor_secret is not defined
+
+- set_fact:
+    monitor_secret: {{ mon_secret.stdout }}
+  when: monitor_secret is not defined
+
 - name: create monitor initial keyring
   command: >
     ceph-authtool /var/lib/ceph/tmp/keyring.mon.{{ ansible_hostname }} --create-keyring --name=mon. --add-key={{ monitor_secret | mandatory }} --cap mon 'allow *'
